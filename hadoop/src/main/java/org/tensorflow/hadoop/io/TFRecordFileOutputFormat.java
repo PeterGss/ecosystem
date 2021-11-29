@@ -17,6 +17,8 @@ package org.tensorflow.hadoop.io;
 
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.compress.GzipCodec;
+import org.apache.hadoop.mapreduce.OutputCommitter;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputCommitter;
 import org.apache.hadoop.util.ReflectionUtils;
 import org.tensorflow.hadoop.util.TFRecordWriter;
 import org.apache.hadoop.conf.Configuration;
@@ -33,6 +35,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 
 public class TFRecordFileOutputFormat extends FileOutputFormat<BytesWritable, NullWritable> {
+  private NoEmptyFileOutputCommitter committer = null;
   @Override public RecordWriter<BytesWritable, NullWritable> getRecordWriter(
       TaskAttemptContext context) throws IOException, InterruptedException {
     Configuration conf = context.getConfiguration();
@@ -42,10 +45,10 @@ public class TFRecordFileOutputFormat extends FileOutputFormat<BytesWritable, Nu
     if (isCompressed) {
       Class<? extends CompressionCodec> codecClass = getOutputCompressorClass(context, GzipCodec.class);
       codec = ReflectionUtils.newInstance(codecClass, conf);
-      extension = codec.getDefaultExtension();
+      extension = codec.getDefaultExtension() ;
     }
     int bufferSize = TFRecordIOConf.getBufferSize(conf);
-    Path file = getDefaultWorkFile(context, extension);
+    Path file = getDefaultWorkFile(context, extension + ".tfrecord");
     FileSystem fs = file.getFileSystem(conf);
     FSDataOutputStream fsDataOutputStream = fs.create(file, true, bufferSize);
     final DataOutputStream fsdos = isCompressed ?
@@ -62,5 +65,14 @@ public class TFRecordFileOutputFormat extends FileOutputFormat<BytesWritable, Nu
         fsdos.close();
       }
     };
+  }
+  @Override
+  public synchronized OutputCommitter getOutputCommitter(TaskAttemptContext context
+  ) throws IOException {
+    if (committer == null) {
+      Path output = getOutputPath(context);
+      committer = new NoEmptyFileOutputCommitter(output, context);
+    }
+    return committer;
   }
 }

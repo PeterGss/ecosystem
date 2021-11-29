@@ -85,13 +85,28 @@ public class TFRecordFileTest {
 
     Path dir = new Path(getTmpDirectory().toString(), "tfr-test-small");
     writeTFRecords(job, context, dir, getExpectedRecords(), false);
-
     String fileName = getFileName(job, new Path(getResourcesDirectory().toString(), "tf-records"));
 
     assertEquals(FileUtils.readFileToString(new File(new File(getResourcesDirectory(), "tf-records"), fileName)),
             FileUtils.readFileToString(new File(dir.toString(), fileName)));
 
     deleteDirectory(job, dir);
+  }
+  @Test
+  public void testWriteEmptyTfRecords() throws Exception {
+    Job job = Job.getInstance(new Configuration());
+    TaskAttemptContext context =
+            MapReduceTestUtil.createDummyMapTaskAttemptContext(job.getConfiguration());
+
+    Path dir = new Path(getTmpDirectory().toString(), "tfr-test-small");
+    writeTFRecords(job, context, dir, getExpectedRecords2(), false);
+    String fileName = getFileName(job, new Path(getResourcesDirectory().toString(), "tf-records"));
+    System.out.println(fileName);
+
+//    assertEquals(FileUtils.readFileToString(new File(new File(getResourcesDirectory(), "tf-records"), fileName)),
+//            FileUtils.readFileToString(new File(dir.toString(), fileName)));
+//
+//    deleteDirectory(job, dir);
   }
 
   @Test
@@ -189,6 +204,12 @@ public class TFRecordFileTest {
     records.put(2L, -2627029093267243214L);
     records.put(3L, 8452912497529882771L);
     records.put(4L, 6197228047171027195L);
+    return records;
+  }
+
+  private Map<Long, Long> getExpectedRecords2() {
+    Map<Long, Long> records = new TreeMap<Long, Long>();
+
     return records;
   }
 
