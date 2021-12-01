@@ -22,8 +22,23 @@ public class NoEmptyFileOutputCommitter extends FileOutputCommitter{
         Path committedTaskPath = getCommittedTaskPath(context);
         FileSystem fs = taskAttemptPath.getFileSystem(context.getConfiguration());
         FileStatus[] listStatus = fs.listStatus(taskAttemptPath);
-        deleteEmptyDir(fs, taskAttemptPath);
-        commitTask(context, null);
+        if(listStatus.length == 0){
+            return;
+        }
+        long length = 0;
+        for(int i =0; i < listStatus.length; i++){
+            if (listStatus[i].isDirectory()) {
+                length += fs.getContentSummary(listStatus[i].getPath()).getLength();
+            } else {
+                length += listStatus[i].getLen();
+            }
+        }
+        if (length == 0){
+            return;
+        }else{
+            // deleteEmptyDir(fs, taskAttemptPath);
+            commitTask(context, null);
+        }
     }
 
     public static void deleteEmptyDir(FileSystem fs,Path path) throws IOException{
